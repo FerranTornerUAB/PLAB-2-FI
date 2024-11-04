@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #define N 512
 float Mat[N][N], MatDD[N][N], V1[N], V2[N], V3[N], V4[N];
@@ -64,13 +65,269 @@ void MultEscalar( float vect[N], float vectres[N], float alfa ) {
     }
 }
 
+float Scalar( float vect1[N], float vect2[N] ) {
+    float scalar = 0.0; 
+    // Multipliquem cada element de vect1 per l'element corresponent de vect2 i ho emmagatzemem a scalar
+    for (int i = 0; i < N; i++) {
+        scalar += vect1[i] * vect2[i];
+    }
+    return scalar;
+}
+
+float Magnitude( float vect[N] ) {
+    int i;
+    int sumatori = 0;
+    for ( i = 0; i < N; ++i) {
+        sumatori += pow(vect[i],2);
+    }
+    float Magnitude = sqrt(sumatori);
+    return Magnitude;
+}
+
+int Ortogonal( float vect1[N], float vect2[N] ) {
+    float suma = 0.0;
+// Calculem la suma dels productes dels vectors
+    for (int i = 0; i < N; i++) {
+        suma += vect1[i] * vect2[i];
+    }
+// Si el total de la suma és zero, la funció retorna 1, si no retorna 0
+    if (suma == 0) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+void  Projection( float vect1[N], float vect2[N], float vectres[N] ) {
+    float Scal_u_v = Scalar(vect1, vect2);
+    float Magnitude_v = Magnitude(vect2);
+    float Div_Scal_Magnitude = Scal_u_v / Magnitude_v;
+    for (int i = 0; i < N; i++) {
+        vectres[i] = Div_Scal_Magnitude * vect2[i];
+    }
+}
+
+float Infininorm( float M[N][N] ) {
+    float sumatori_max = 0.0;
+    for (int i = 0; i < N; i++) {
+        float sumatori = 0.0;
+        for (int j = 0; j < N; j++) {
+            sumatori += fabs(M[i][j]);
+        }
+        if (sumatori > sumatori_max) {
+            sumatori_max = sumatori;
+        }
+    }
+    return sumatori_max;
+}
+
+float Onenorm(float M[N][N]) {
+    float max_sum = 0.0;  // Emmagatzema la màxima suma de les columnes
+    // Recorrem cada columna
+    for (int columna = 0; columna < N; columna++) {
+        float columna_sum = 0.0;  // Inicialitzem la suma de la columna actual a 0
+
+        // Sumar els valors absoluts de cada element de la columna
+        for (int fila = 0; fila < N; fila++) {
+            float valor = M[fila][columna];
+            // Obtenim el valor absolut
+            if (valor < 0) {
+                valor = -valor;
+            }
+            columna_sum += valor;
+        }
+        // Actualitzem el màxim si la suma de la columna actual és més gran
+        if (columna_sum > max_sum) {
+            max_sum = columna_sum;
+        }
+    }
+    return max_sum;  // Retornem la norma-ú de la matriu
+}
+
+float FrobeniusNorm(float M[N][N]) {
+    float sum = 0.0;
+    // Suma dels quadrats dels elements
+    for (int fila = 0; fila < N; fila++) {
+        for (int columna = 0; columna < N; columna++) {
+            sum += M[fila][columna] * M[fila][columna];
+        }
+    }
+
+    // Retornem l'arrel quadrada de la suma
+    return sqrt(sum);
+}
+
+int DiagonalDom(float M[N][N]) {
+    for (int fila = 0; fila < N; fila++) {
+        float suma = 0.0;
+        // Suma dels valors absoluts dels elements fora de la diagonal de la fila actual
+        for (int columna = 0; columna < N; columna++) {
+            if (columna != fila) {
+                float valor = M[fila][columna];
+                // Obtenim el valor absolut
+                if (valor < 0) {
+                    valor = -valor;  
+                }
+                suma += valor; //Sumem els valors
+            }
+        }
+        float element_diagonal = M[fila][fila];
+        // Valor absolut de l'element de la diagonal de la fila actual
+        if (element_diagonal < 0) {
+            element_diagonal = -element_diagonal;
+        }
+        // Comprovem si l'element de la diagonal és més gran o igual que la suma
+        if (element_diagonal < suma) {
+            return 0;  // No és diagonalment dominant
+        }
+    }
+    return 1;  // L’element de la diagonal és més gran o igual que la suma dels valors absoluts dels altres elements de la fila, per a totes les files de la matriu. La matriu és diagonalment dominant
+}
+
+void Matriu_x_Vector( float M[N][N], float vect[N], float vectres[N] ) {
+    for (int fila = 0; fila < N; fila++) {
+        vectres[fila] = 0; //Inicialitzem els valors de la matriu
+        //Calculem el punt de la fila de la matriu pel vector
+        for (int columna = 0; columna < N; columna++) {
+            vectres[fila] += M[fila][columna] * vect[columna] ; 
+        }
+    }
+}
 
 int main() {
-InitData();
+InitData(); //Cridem la funció InitData per obtindre els vectors i les matrius
+
+printf("A. \n");
+printf("Els elements 0 al 9 de V1: \n");
 PrintVect(V1, 0, 10);
+printf("Els elements 256 al 265 de V1: \n");
 PrintVect(V1, 256, 10);
+printf("Els elements 0 al 9 de V2: \n");
+PrintVect(V2, 0, 10);
+printf("Els elements 256 al 265 de V2: \n");
+PrintVect(V2, 256, 10);
+printf("Els elements 0 al 9 de V3: \n");
+PrintVect(V3, 0, 10);
+printf("Els elements 256 al 265 de V3: \n");
+PrintVect(V3, 256, 10);
+
+printf("\nB. \n");
+printf("Els elements 0 al 9 de la fila 0 de Mat: \n");
 PrintRow(Mat, 0, 0, 10);
+printf("Els elements 0 al 9 de la fila 0 de Mat: \n");
+PrintRow(Mat, 100, 0, 10);
+
+printf("\nC. Els elements 0 al 9 de la fila 0 i 90 a 99 de la fila 100 de la matriu MatDD. \n");
+printf("Els elements 0 al 9 de la fila 0 de MatDD: \n");
+PrintRow(MatDD, 0, 0, 10);
+printf("Els elements 90 al 99 de la fila 100 de Mat: \n");
+PrintRow(MatDD, 100, 90, 10);
+
+printf("\nD. \n");
+printf("Mat: \n");
+float InfiMAT = Infininorm(Mat);
+printf("La infini-norma de la matriu Mat és: %.6f\n", InfiMAT);
+
+float norma_u1 = Onenorm( Mat );
+printf("La norma-u de la matriu Mat és: %.3f \n", norma_u1);
+
+float norma_Frobenius1 = FrobeniusNorm( Mat );
+printf("La norma de Frobenius de la matriu Mat és: %.3f \n", norma_Frobenius1);
+
+int diagonalment_dominant1 = DiagonalDom( Mat );
+if (diagonalment_dominant1 == 0) {
+    printf("La matriu Mat no és diagonal dominant \n");
+}
+else{
+    printf("La matriu Mat és diagonal dominant \n");
+}
+
+printf("MatDD: \n");
+float InfiMATDD = Infininorm(MatDD);
+printf("La infini-norma de la matriu MatDD és: %.6f\n", InfiMATDD);
+
+float norma_u2 = Onenorm( MatDD );
+printf("La norma-u de la matriu MatDD és: %.3f \n", norma_u2);
+
+float norma_Frobenius2 = FrobeniusNorm( MatDD );
+printf("La norma de Frobenius de la matriu MatDD és: %.3f \n", norma_Frobenius2);
+
+int diagonalment_dominant2 = DiagonalDom( MatDD );
+if (diagonalment_dominant2 == 0) {
+    printf("La matriu MatDD no és diagonal dominant \n");
+}
+else{
+    printf("La matriu MatDD és diagonal dominant \n");
+}
+
+printf("\nE. \n");
+float scalar1 = Scalar( V1, V2 );
+printf("Escalar <V1,V2> = ");
+printf("%.6f ", scalar1);
+printf("\n"); 
+
+float scalar2 = Scalar( V1, V3 );
+printf("Escalar <V1,V3> = ");
+printf("%.6f ", scalar2);
+printf("\n");  
+
+float scalar3 = Scalar( V2, V3 );
+printf("Escalar <V2,V3> = ");
+printf("%.6f ", scalar3);
+printf("\n");  
+
+printf("\nF. \n");
+float Mag1 = Magnitude(V1);
+float Mag2 = Magnitude(V2);
+float Mag3 = Magnitude(V3);
+printf("La magnitud de V1 és %.6f\n", Mag1);
+printf("La magnitud de V2 és %.6f\n", Mag2);
+printf("La magnitud de V3 és %.6f\n", Mag3);
+
+printf("\nG. \n");
+int ortV1V2 = Ortogonal(V1, V2);
+if (ortV1V2 == 0) {
+    printf("V1 i V2 no són ortogonals \n");
+}
+else{
+    printf("V1 i V2 són ortogonals\n");
+}
+int ortV1V3 = Ortogonal(V1, V3);
+if (ortV1V3 == 0) {
+    printf("V1 i V3 no són ortogonals \n");
+}
+else{
+    printf("V1 i V3 són ortogonals\n");
+}
+int ortV2V3 = Ortogonal(V2, V3);
+if (ortV2V3 == 0) {
+    printf("V2 i V3 no són ortogonals \n");
+}
+else{
+    printf("V2 i V3 són ortogonals\n");
+}
+
+printf("\nH. \n");
 float vectres[N];
-MultEscalar( V1, vectres, 2.0);
+MultEscalar( V3, vectres, 2.0);
+printf("Elements 0 al 9 de la multiplicació del vector V3 amb l’escalar 2.0: \n");
+PrintVect(vectres, 0, 10);
+printf("Elements 256 al 265 de la multiplicació del vector V3 amb l’escalar 2.0: \n");
+PrintVect(vectres, 256, 10);
+
+printf("\nI. \n");
+float proj_v2_v3[N];
+Projection(V2, V3, proj_v2_v3);
+printf("10 primers elements de la projecció de V2 sobre V3: \n");
+PrintVect(proj_v2_v3, 0, 10);
+
+float proj_v1_v2[N];
+Projection(V1, V2, proj_v1_v2);
+printf("10 primers elements de la projecció de V1 sobre V2: \n");
+PrintVect(proj_v1_v2, 0, 9);
+
+printf("\nJ. \n");
+Matriu_x_Vector( Mat, V2, vectres );
+printf("10 primers elements de la la multiplicació de la matriu Mat amb el vector v2: \n");
 PrintVect(vectres, 0, 10);
 }
