@@ -194,6 +194,66 @@ void Matriu_x_Vector( float M[N][N], float vect[N], float vectres[N] ) {
     }
 }
 
+int Jacobi(float M[N][N], float vect[N], float vectres[N], unsigned iter) {
+    // Comprovem si la matriu és diagonal dominant i si no ho és retornem 0
+    if (!DiagonalDom(M)) {
+        return 0;
+    }
+
+
+    // Establim el llindar que ha de complir la diferència entre dues solucions consecutives per a què el programa deixi d'iterar
+    #define llindar 1e-6
+    float sum;
+    float new_vectres[N]; // Vector temporal per a guardar els nous valors
+    // Inicialitzem vectres amb els valors inicials
+    for (unsigned i = 0; i < N; i++) {
+        vectres[i] = 0.0;
+    }
+
+
+    for (unsigned i = 0; i < iter; i++) {
+        int convergencia = 1;
+        
+        for (unsigned j = 0; j < N; j++) {
+            sum = 0.0;
+            for (unsigned k = 0; k < N; k++) {
+                if (j != k) {
+                    sum += M[j][k] * vectres[k];
+                }
+            }
+            float valor = (vect[j] - sum) / M[j][j];
+            new_vectres[j] = valor;
+
+            // Verifiquem la convergència comparant la diferència absoluta
+            if ((valor - vectres[j] > llindar) || (vectres[j] - valor > llindar)) {
+                convergencia = 0;
+            }
+        }
+
+        // Actualitzem els valors de vectres amb els nous valors
+        for (unsigned j = 0; j < N; j++) {
+            vectres[j] = new_vectres[j];
+        }
+
+        // Si ha convergit, retornem 1 i finalitzem
+        if (convergencia == 1) {
+            return 1;
+        }
+    }
+}
+
+//Definim la funció 'precisió'. Volem calcular la precisió amb què x compleix la premissa Ax = B, per tant, la funció agafarà com a paràmetres la matriu A, el vector aproximació X (resultat de la funció Jacobi) i el vector B.
+float precisió(float matA[N][N], float vectX[N], float vectB[N]){
+    float vect_aprox_B[N];
+    Matriu_x_Vector(matA,vectX, vect_aprox_B);
+    float vect_diferencia[N];
+    for (int i = 0; i < N; i++){
+        vect_diferencia[i] = abs(vectB[i] - vect_aprox_B[i]);
+    }
+    float Magnitut_diferencia = Magnitude(vect_diferencia);
+    return Magnitut_diferencia;
+}
+
 int main() {
 InitData(); //Cridem la funció InitData per obtindre els vectors i les matrius
 
@@ -330,4 +390,49 @@ printf("\nJ. \n");
 Matriu_x_Vector( Mat, V2, vectres );
 printf("10 primers elements de la la multiplicació de la matriu Mat amb el vector v2: \n");
 PrintVect(vectres, 0, 10);
+
+printf("\nK. \n");
+printf("Solució del sistema d’equacions MatDD*X = V3: \n");
+unsigned iter1 = 1;
+int res1 = Jacobi(MatDD, V3, vectres, iter1);
+if (res1 == 1) {
+    printf("Amb 1 iteració: \n");
+    PrintVect(vectres, 0, 10);
+}
+else {
+    printf("La matriu MatDD no és diagonal dominant, no es pot aplicar Jacobi");
+}
+unsigned iter1000 = 1000;
+int res2 = Jacobi(MatDD, V3, vectres, iter1000);
+if (res2 == 1) {
+    printf("Amb 1000 iteracions: \n");
+    PrintVect(vectres, 0, 10);
+}
+else {
+    printf("La matriu MatDD no és diagonal dominant, no es pot aplicar Jacobi");
+}
+int res3 = Jacobi(Mat, V3, vectres, iter1);
+if (res3 == 1) {
+    printf("Amb 1 iteració: \n");
+    PrintVect(vectres, 0, 10);
+}
+else {
+    printf("La matriu Mat no és diagonal dominant, no es pot aplicar Jacobi \n");
+}
+
+printf("\nPunt Extra: \n");
+float vectres_jacobi1[N];
+Jacobi(MatDD, V3, vectres_jacobi1, 1);
+printf("El vector X que cumpleix MatDD * X = V3 (després de una iteració) és aproximadament: ");
+PrintVect(vectres_jacobi1, 0, 10);
+float vectres_jacobi2[N];
+Jacobi(MatDD, V3, vectres_jacobi2, 1000);
+printf("El vector X que cumpleix MatDD * X = V3 (després de 1000 iteracións) és aproximadament: ");
+PrintVect(vectres_jacobi2, 0, 10);
+
+float precisió_x_1_iteració = precisió(MatDD, vectres_jacobi1, V3);
+printf("La precisió de X després d'una iteració és %.10f\n",precisió_x_1_iteració);
+float precisió_x_1000_iteracions = precisió(MatDD, vectres_jacobi2, V3);
+printf("La precisió de X després de 1000 iteracions és %.10f\n",precisió_x_1000_iteracions);
+
 }
